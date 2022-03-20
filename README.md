@@ -15,3 +15,7 @@ For the demo portion of this presentation i will be showing how this voulnerabil
 
 ### Hardware
 For this attack i will be using a [USB rubber ducky](https://shop.hak5.org/products/usb-rubber-ducky-deluxe) which i purchaced from the [Hak5 store](https://shop.hak5.org/) several years ago for about $50. I would highly reccomend checking them out as they have some really cool hacking hardware on their site. This attack could also be carried out by another BadUSB configuration that is much cheaper but this is just what i had on hand. [Here](https://medium.com/@EatonChips/building-a-usb-rubber-ducky-for-7-c851aae30a1d) is a really cool tutorial that shows you how to make a BadUSB out of a $7 Arduino usb microcontroller. I have not actually tried this yet so i cant say if it works but i plan to try it in the future. 
+<p align="center">
+  <img src="https://github.com/svecile/BadUSB_Notes/blob/main/IMG_3324.jpg" alt="usbInners" width="100"/>
+  <img src="https://github.com/svecile/BadUSB_Notes/blob/main/IMG_3325.jpg" alt="usb" width="150"/>
+</p>
