@@ -249,7 +249,7 @@ powershell Start-Process powershell.exe -windowstyle hidden "$env:temp/l.ps1"
 Here @echo off just means when the cmd is opened you wont see the powershell commands actually typed although they will still happen. The two commands just start each of the files in succession first p.ps1 (keylogger) and then l.ps1 (keylogger schedule). In the origional attack by CosmodiumCS the c.cmd file is placed in the windows start folder so every time windows starts it wil run which will in turn run the keylogger and the scheduler allowing this attack to be persistant. Just to note i am dumbfounded that windows allows ANYTHING to be placed in this folder without admin privlages. Which is just a huge security risk. However if you look at your startup applications in task manager you will see it listed which i think makes it pretty obvious c.cmd shouldnt be there.
 
 <p align="center">
-  <img src="https://github.com/svecile/BadUSB_Notes/blob/main/startup.png" alt="startup" width="700"/>
+  <img src="https://github.com/svecile/BadUSB_Notes/blob/main/startup.png" alt="startup" width="800"/>
 </p>
 
 So because of that i tried modififying this attack in two ways. The first way was just making the c.cmd file hidden which works well since it no longer shows up in the start programs of task manager. However if you have show hidden files on like i do you can still see it kinda greyed out in the startup folder so i thought i would disguise it in a cooler way which i will explain in the part about the ducky script. 
